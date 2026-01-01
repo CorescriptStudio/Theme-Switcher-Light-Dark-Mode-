@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Switcher</title>
+    <style>
+        /* GLOBAL VARIABLES & RESET 
+           Using CSS variables to easily manage the two color palettes.
+        */
+        :root {
+            /* Light Mode Colors */
+            --bg-color: #e0e5ec;
+            --text-color: #4a4a4a;
+            --toggle-bg: rgba(255, 255, 255, 0.25);
+            --toggle-border: rgba(255, 255, 255, 0.4);
+            --knob-bg: rgba(255, 255, 255, 0.6);
+            --glow-color: rgba(255, 160, 0, 0.4); /* Warm Sun Glow */
+            --shadow-light: #ffffff;
+            --shadow-dark: #a3b1c6;
+        }
+
+        /* Dark Mode Colors (Applied when body has class .dark-mode) */
+        body.dark-mode {
+            --bg-color: #0f172a; /* Deep Midnight Blue */
+            --text-color: #e2e8f0;
+            --toggle-bg: rgba(30, 41, 59, 0.5);
+            --toggle-border: rgba(255, 255, 255, 0.1);
+            --knob-bg: rgba(255, 255, 255, 0.1);
+            --glow-color: rgba(99, 102, 241, 0.5); /* Cool Moon Glow */
+            --shadow-light: rgba(255, 255, 255, 0.05);
+            --shadow-dark: rgba(0, 0, 0, 0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.4s ease-in-out;
+            overflow: hidden;
+        }
+
+        /* THE TOGGLE CONTAINER (The Pill) 
+           Combination of Glassmorphism (blur) and Neumorphism (shadows).
+        */
+        .toggle-label {
+            width: 180px;
+            height: 80px;
+            position: relative;
+            display: block;
+            background: var(--toggle-bg);
+            border-radius: 100px;
+            border: 1px solid var(--toggle-border);
+            cursor: pointer;
+            backdrop-filter: blur(15px); /* The "Glass" effect */
+            -webkit-backdrop-filter: blur(15px);
+            
+            /* The "Neumorphism" 3D Shadow Effect */
+            box-shadow: 
+                10px 10px 20px var(--shadow-dark), 
+                -10px -10px 20px var(--shadow-light),
+                inset 0 0 0 transparent; /* Prepared for transition */
+            
+            transition: all 0.4s ease;
+        }
+
+        /* Hide the actual checkbox input */
+        #theme-checkbox { display: none; }
+
+        /* THE KNOB (The Sliding Circle) 
+           This moves left and right.
+        */
+        .knob {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: var(--knob-bg);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            
+            /* Inner bloom/glow effect */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Bouncy effect */
+            z-index: 2;
+        }
+
+        /* ICONS 
+           We swap them using opacity.
+        */
+        .icon {
+            width: 32px;
+            height: 32px;
+            position: absolute;
+            transition: all 0.4s ease;
+        }
+
+        /* Default state: Sun is visible, Moon is hidden */
+        .sun-icon { opacity: 1; transform: rotate(0deg); fill: #ffa500; filter: drop-shadow(0 0 5px #ffa500); }
+        .moon-icon { opacity: 0; transform: rotate(-90deg); fill: #c7d2fe; }
+
+        /* TEXT LABEL ("Light" / "Dark")
+        */
+        .status-text {
+            position: absolute;
+            right: 35px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-color);
+            letter-spacing: 1px;
+            transition: all 0.4s ease;
+            user-select: none;
+        }
+
+        /* ------------------------- */
+        /* ACTIVE STATES        */
+        /* ------------------------- */
+
+        /* When Checked (Dark Mode) - Move Knob */
+        #theme-checkbox:checked + .toggle-label .knob {
+            transform: translateX(98px);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Swap Icons */
+        #theme-checkbox:checked + .toggle-label .sun-icon {
+            opacity: 0;
+            transform: rotate(90deg);
+        }
+
+        #theme-checkbox:checked + .toggle-label .moon-icon {
+            opacity: 1;
+            transform: rotate(0deg);
+            filter: drop-shadow(0 0 8px #6366f1);
+        }
+
+        /* Change Text Position & Content */
+        #theme-checkbox:checked + .toggle-label .status-text {
+            right: auto;
+            left: 35px; /* Move text to the left side */
+            color: #c7d2fe;
+        }
+
+        /* Outer Glow on the Pill container when active */
+        #theme-checkbox:checked + .toggle-label {
+            box-shadow: 
+                5px 5px 15px rgba(0,0,0,0.4), 
+                -5px -5px 15px rgba(255,255,255,0.05),
+                0 0 15px var(--glow-color); /* The Bloom Glow */
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+    </style>
+</head>
+<body>
+
+    <input type="checkbox" id="theme-checkbox">
+
+    <label for="theme-checkbox" class="toggle-label">
+        
+        <span class="knob">
+            <svg class="icon sun-icon" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            
+            <svg class="icon moon-icon" viewBox="0 0 24 24">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </span>
+
+        <span class="status-text">Light</span>
+    </label>
+
+    <script>
+        // Select elements
+        const checkbox = document.getElementById('theme-checkbox');
+        const body = document.body;
+        const statusText = document.querySelector('.status-text');
+
+        // Event Listener
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                // Activate Dark Mode
+                body.classList.add('dark-mode');
+                
+                // Fade text out, change it, fade back in
+                statusText.style.opacity = 0;
+                setTimeout(() => {
+                    statusText.textContent = "Dark";
+                    statusText.style.opacity = 1;
+                }, 200); // Wait halfway through the transition
+                
+            } else {
+                // Activate Light Mode
+                body.classList.remove('dark-mode');
+                
+                // Fade text out, change it, fade back in
+                statusText.style.opacity = 0;
+                setTimeout(() => {
+                    statusText.textContent = "Light";
+                    statusText.style.opacity = 1;
+                }, 200);
+            }
+        });
+    </script>
+</body>
+</html>
